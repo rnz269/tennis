@@ -1,4 +1,6 @@
 import fetch from "node-fetch";
+import dotenv from "dotenv";
+dotenv.config();
 // import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 // Helper to generate mm%2Fdd%2Fyyyy string for offset days
@@ -13,6 +15,13 @@ function getEncodedDate(offset) {
 
 export async function fetchAvailability() {
   const results = [];
+  const cookieString = [
+    `PHPSESSID=${process.env.PENN_PHPSESSID}`,
+    `isLoggedIn=1`,
+    `__cf_bm=${process.env.PENN_CF_BM}`,
+    `cf_clearance=${process.env.PENN_CF_CLEARANCE}`,
+    `SessionExpirationTime=${process.env.PENN_SESSION_EXPIRATION}`,
+  ].join("; ");
 
   for (let i = 0; i < 4; i++) {
     const dateParam = getEncodedDate(i);
@@ -38,12 +47,12 @@ export async function fetchAvailability() {
           "x-instana-s": "6c8393dd5b5571e2",
           "x-instana-t": "6c8393dd5b5571e2",
           "x-requested-with": "XMLHttpRequest",
-          cookie: "PHPSESSID=740i72s38p1p3i9vvoo966n6pc; isLoggedIn=1; ...",
+          cookie: cookieString,
           Referer:
             "https://penntennis.clubautomation.com/event/reserve-court-new",
           "Referrer-Policy": "strict-origin-when-cross-origin",
         },
-        body: `reservation-list-page=1&user_id=13057&event_member_token_reserve_court=3c2fc409b9cb8e80b875e357343b75c3&current_guest_count=0&component=2&club=-1&location=-1&court=-1&host=13057&add-new-child-to-guest_1=&add-new-child-to-guest_2=&add-new-child-to-guest_3=&add-new-child-to-guest_4=&add-new-child-to-guest_5=&add-new-child-to-guest_6=&add-new-child-to-guest_7=&add-new-child-to-guest_8=&add-new-child-to-guest_9=&add-new-child-to-guest_10=&add-new-child-to-guest_11=&add-new-child-to-guest_12=&add-new-child-to-guest_13=&add-new-child-to-guest_14=&add-new-child-to-guest_15=&date=${dateParam}&interval=60&timeFrom=1&timeTo=23&time-reserve=&location-reserve=&surface-reserve=&courtsnotavailable=&join-waitlist-case=0`,
+        body: `reservation-list-page=1&user_id=${process.env.USER_ID}&event_member_token_reserve_court=${process.env.EVENT_MEMBER_TOKEN}&current_guest_count=0&component=2&club=-1&location=-1&court=-1&host=${process.env.USER_ID}&add-new-child-to-guest_1=&add-new-child-to-guest_2=&add-new-child-to-guest_3=&add-new-child-to-guest_4=&add-new-child-to-guest_5=&add-new-child-to-guest_6=&add-new-child-to-guest_7=&add-new-child-to-guest_8=&add-new-child-to-guest_9=&add-new-child-to-guest_10=&add-new-child-to-guest_11=&add-new-child-to-guest_12=&add-new-child-to-guest_13=&add-new-child-to-guest_14=&add-new-child-to-guest_15=&date=${dateParam}&interval=60&timeFrom=1&timeTo=23&time-reserve=&location-reserve=&surface-reserve=&courtsnotavailable=&join-waitlist-case=0`,
       }
     );
 
@@ -73,8 +82,6 @@ export const handler = async (event) => {
   try {
     // 1. Fetch results for the next 4 days
     const results = await fetchAvailability();
-
-    console.log("results", results);
 
     // 2. Find which days DO NOT include the "no availability" string
     const daysWithAvailability = results
